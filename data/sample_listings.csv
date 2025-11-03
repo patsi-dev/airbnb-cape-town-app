@@ -1,0 +1,8 @@
+price,room_type,accommodates,bedrooms,bathrooms,neighbourhood_cleansed
+2500,Entire home/apt,4,2,1.5,City Bowl
+1800,Private room,2,1,1.0,Sea Point
+3500,Entire home/apt,6,3,2.0,Camps Bay
+1200,Private room,1,1,1.0,Green Point
+4000,Entire home/apt,8,4,3.0,Clifton
+900,Private room,1,1,1.0,Tamboerskloof
+2800,Entire home/apt,5,2,1.5,Gardens
