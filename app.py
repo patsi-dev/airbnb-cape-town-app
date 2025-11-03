@@ -10,21 +10,24 @@ st.set_page_config(page_title="Cape Town Airbnb", layout="wide")
 st.title("🏠 Cape Town Airbnb Price Predictor")
 st.markdown("**XGBoost — The Best Model — Live Predictions**")
 
-# Load model
 @st.cache_resource
 def load_model():
     try:
-        model = joblib.load("cape_town_model.pkl")
-        st.success("✅ Model loaded successfully")
-        
-        # Show model info
-        if hasattr(model, 'feature_names_in_'):
-            st.info(f"Model expects {len(model.feature_names_in_)} features")
-            
+        # Try loading with compatibility mode
+        model = joblib.load("cape_town_model.pkl", mmap_mode=None)
+        st.success("✅ Model loaded successfully with compatibility mode")
         return model
     except Exception as e:
-        st.error(f"❌ Error loading model: {e}")
-        return None
+        st.error(f"❌ Error loading model with compatibility mode: {e}")
+        
+        # If that fails, try with compatible=True (different parameter name in some versions)
+        try:
+            model = joblib.load("cape_town_model.pkl")
+            st.success("✅ Model loaded successfully (fallback method)")
+            return model
+        except Exception as e2:
+            st.error(f"❌ Fallback loading also failed: {e2}")
+            return None
 
 model = load_model()
 
