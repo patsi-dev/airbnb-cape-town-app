@@ -10,42 +10,20 @@ st.set_page_config(page_title="Cape Town Airbnb", layout="wide")
 st.title("🏠 Cape Town Airbnb Price Predictor")
 st.markdown("**XGBoost — The Best Model — Live Predictions**")
 
+# Load model
 @st.cache_resource
 def load_model():
     try:
-        # Try different loading methods
-        import joblib
+        model = joblib.load("cape_town_model.pkl")
+        st.success("✅ Model loaded successfully")
         
-        # Method 1: Standard load
-        try:
-            model = joblib.load("cape_town_model.pkl")
-            st.success("✅ Model loaded successfully (standard)")
-            return model
-        except Exception as e1:
-            st.warning(f"Standard loading failed: {e1}")
+        # Show model info
+        if hasattr(model, 'feature_names_in_'):
+            st.info(f"Model expects {len(model.feature_names_in_)} features")
             
-        # Method 2: Try with mmap_mode
-        try:
-            model = joblib.load("cape_town_model.pkl", mmap_mode=None)
-            st.success("✅ Model loaded successfully (mmap_mode)")
-            return model
-        except Exception as e2:
-            st.warning(f"mmap_mode loading failed: {e2}")
-            
-        # Method 3: Try with different parameters
-        try:
-            model = joblib.load("cape_town_model.pkl", mmap_mode='r')
-            st.success("✅ Model loaded successfully (mmap_mode='r')")
-            return model
-        except Exception as e3:
-            st.warning(f"mmap_mode='r' loading failed: {e3}")
-            
-        # If all methods fail
-        st.error("❌ All model loading methods failed")
-        return None
-        
+        return model
     except Exception as e:
-        st.error(f"❌ Unexpected error in load_model: {e}")
+        st.error(f"❌ Error loading model: {e}")
         return None
 
 model = load_model()
