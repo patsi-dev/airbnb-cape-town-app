@@ -2,9 +2,9 @@ streamlit
 pandas
 numpy
 xgboost
-shap
+joblib
+scikit-learn==1.2.2  # <- use the training version if you know it
 matplotlib
 seaborn
+shap
 geopy
-joblib
-scikit-learn
