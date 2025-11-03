@@ -6,6 +6,7 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 
+# Page config
 st.set_page_config(page_title="Cape Town Airbnb", layout="centered")
 st.title("Cape Town Airbnb Price Predictor")
 st.markdown("*Enter details → Get optimal nightly rate*")
@@ -15,7 +16,8 @@ st.markdown("*Enter details → Get optimal nightly rate*")
 def load_data():
     url = "http://data.insideairbnb.com/south-africa/wc/cape-town/2024-09-28/data/listings.csv.gz"
     df = pd.read_csv(url, compression='gzip', low_memory=False)
-    df = df[['price','room_type','accommodates','bedrooms','bathrooms','neighbourhood_cleansed']].dropna()
+    cols = ['price','room_type','accommodates','bedrooms','bathrooms','neighbourhood_cleansed']
+    df = df[cols].dropna()
     df['price'] = df['price'].replace('[\$,]','',regex=True).astype(float)
     return df
 
@@ -35,11 +37,11 @@ preprocessor = ColumnTransformer([
 
 model = Pipeline([
     ('prep', preprocessor),
-    ('rf', RandomForestRegressor(n_estimators=200, random_state=42))
+    ('rf', RandomForestRegressor(n_estimators=100, random_state=42))
 ])
 model.fit(X, y)
 
-# --- Input ---
+# --- User Input ---
 st.sidebar.header("Enter Listing Details")
 guests = st.sidebar.slider("Guests", 1, 16, 4)
 bedrooms = st.sidebar.slider("Bedrooms", 1, 10, 2)
@@ -58,6 +60,6 @@ if st.sidebar.button("Predict Price"):
     pred_log = model.predict(input_df)
     price = np.expm1(pred_log)[0]
     st.metric("Estimated Price", f"R {price:,.0f} per night")
-    st.success("Prediction complete!")
+    st.success("Prediction ready!")
 
-st.caption("Data: Inside Airbnb | Model: Random Forest")
+st.caption("Data: Inside Airbnb | Model: Random Forest | Streamlit Cloud")
