@@ -10,42 +10,20 @@ st.set_page_config(page_title="Cape Town Airbnb", layout="wide")
 st.title("🏠 Cape Town Airbnb Price Predictor")
 st.markdown("**XGBoost — The Best Model — Live Predictions**")
 
+# Load model
 @st.cache_resource
 def load_model():
     try:
-        # Try different loading methods
-        import joblib
+        model = joblib.load("cape_town_model.pkl")
+        st.success("✅ Model loaded successfully")
         
-        # Method 1: Standard load
-        try:
-            model = joblib.load("cape_town_model.pkl")
-            st.success("✅ Model loaded successfully (standard)")
-            return model
-        except Exception as e1:
-            st.warning(f"Standard loading failed: {e1}")
+        # Show model info
+        if hasattr(model, 'feature_names_in_'):
+            st.info(f"Model expects {len(model.feature_names_in_)} features")
             
-        # Method 2: Try with mmap_mode
-        try:
-            model = joblib.load("cape_town_model.pkl", mmap_mode=None)
-            st.success("✅ Model loaded successfully (mmap_mode)")
-            return model
-        except Exception as e2:
-            st.warning(f"mmap_mode loading failed: {e2}")
-            
-        # Method 3: Try with different parameters
-        try:
-            model = joblib.load("cape_town_model.pkl", mmap_mode='r')
-            st.success("✅ Model loaded successfully (mmap_mode='r')")
-            return model
-        except Exception as e3:
-            st.warning(f"mmap_mode='r' loading failed: {e3}")
-            
-        # If all methods fail
-        st.error("❌ All model loading methods failed")
-        return None
-        
+        return model
     except Exception as e:
-        st.error(f"❌ Unexpected error in load_model: {e}")
+        st.error(f"❌ Error loading model: {e}")
         return None
 
 model = load_model()
@@ -79,7 +57,7 @@ DEFAULT_PROPERTY_TYPES = ['Apartment', 'House', 'Guesthouse', 'Condominium', 'Vi
 DEFAULT_ROOM_TYPES = ['Entire home/apt', 'Private room', 'Shared room', 'Hotel room']
 DEFAULT_NEIGHBOURHOODS = ['City Bowl', 'Atlantic Seaboard', 'Southern Suburbs', 'False Bay', 'Northern Suburbs']
 
-# User input - ONLY THE 11 FEATURES THE MODEL EXPECTS
+# User input - ONLY THE 20 FEATURES THE MODEL EXPECTS
 st.sidebar.header("🏡 Property Details")
 
 # Property Basics
@@ -98,6 +76,7 @@ with col1:
     
 with col2:
     bedrooms = st.slider("Bedrooms", 1, 10, 2)
+    beds = st.slider("Beds", 1, 16, 3)
     bathrooms = st.slider("Bathrooms", 0.5, 6.0, 1.0, 0.5)
 
 # Location
@@ -115,15 +94,42 @@ with col2:
 
 # Host Information
 st.sidebar.subheader("👤 Host Details")
-host_is_superhost = st.sidebar.selectbox("Superhost", ['No', 'Yes'])
+
+col1, col2 = st.sidebar.columns(2)
+with col1:
+    host_listings_count = st.slider("Host Listings Count", 1, 100, 2)
+    host_acceptance_rate = st.slider("Host Acceptance Rate %", 0, 100, 90)
+    
+with col2:
+    hosting_years = st.slider("Hosting Years", 0.0, 20.0, 3.0, 0.5)
 
 # Reviews
 st.sidebar.subheader("⭐ Reviews")
-review_scores_rating = st.sidebar.slider("Review Rating", 0.0, 5.0, 4.5, 0.1)
-number_of_reviews = st.sidebar.slider("Number of Reviews", 0, 500, 25)
+
+col1, col2 = st.sidebar.columns(2)
+with col1:
+    review_scores_rating = st.slider("Review Rating", 0.0, 5.0, 4.5, 0.1)
+with col2:
+    review_scores_location = st.slider("Location Rating", 0.0, 5.0, 4.5, 0.1)
+
+# Amenities & Booking
+st.sidebar.subheader("📅 Amenities & Booking")
+
+instant_bookable = st.sidebar.selectbox("Instant Bookable", ['No', 'Yes'])
+
+col1, col2 = st.sidebar.columns(2)
+with col1:
+    has_pool = st.checkbox("Has Pool")
+    has_bbq_grill = st.checkbox("Has BBQ Grill")
+    
+with col2:
+    has_ocean_view = st.checkbox("Has Ocean View")
+    has_hot_tub = st.checkbox("Has Hot Tub")
+
+amenities_count = st.sidebar.slider("Amenities Count", 0, 50, 15)
 
 def create_input_with_exact_features():
-    """Create input with EXACTLY the 11 features the model expects"""
+    """Create input with EXACTLY the 20 features the model expects"""
     
     # Get the expected feature names from the model
     expected_features = model.feature_names_in_
@@ -138,6 +144,7 @@ def create_input_with_exact_features():
         # Property basics - numeric
         'accommodates': np.array([accommodates], dtype=np.float64),
         'bedrooms': np.array([bedrooms], dtype=np.float64),
+        'beds': np.array([beds], dtype=np.float64),
         'bathrooms': np.array([bathrooms], dtype=np.float64),
         
         # Location - numeric
@@ -145,11 +152,23 @@ def create_input_with_exact_features():
         'longitude': np.array([longitude], dtype=np.float64),
         
         # Host information - numeric
-        'host_is_superhost': np.array([1 if host_is_superhost == 'Yes' else 0], dtype=np.float64),
+        'host_listings_count': np.array([host_listings_count], dtype=np.float64),
+        'host_acceptance_rate': np.array([float(host_acceptance_rate)], dtype=np.float64),
+        'hosting_years': np.array([hosting_years], dtype=np.float64),
         
         # Reviews - numeric
         'review_scores_rating': np.array([review_scores_rating], dtype=np.float64),
-        'number_of_reviews': np.array([number_of_reviews], dtype=np.float64),
+        'review_scores_location': np.array([review_scores_location], dtype=np.float64),
+        
+        # Amenities - numeric
+        'amenities_count': np.array([amenities_count], dtype=np.float64),
+        'has_pool': np.array([1 if has_pool else 0], dtype=np.float64),
+        'has_bbq_grill': np.array([1 if has_bbq_grill else 0], dtype=np.float64),
+        'has_ocean_view': np.array([1 if has_ocean_view else 0], dtype=np.float64),
+        'has_hot_tub': np.array([1 if has_hot_tub else 0], dtype=np.float64),
+        
+        # Booking - numeric
+        'instant_bookable': np.array([1 if instant_bookable == 'Yes' else 0], dtype=np.float64),
     }
     
     # Create DataFrame with ONLY the expected features in the correct order
@@ -211,13 +230,13 @@ with st.expander("📋 Current Input Summary", expanded=True):
     with col2:
         st.write("**Rooms**")
         st.write(f"- Bedrooms: {bedrooms}")
+        st.write(f"- Beds: {beds}")
         st.write(f"- Bathrooms: {bathrooms}")
-        st.write(f"- Area: {neighbourhood}")
     with col3:
-        st.write("**Host & Reviews**")
-        st.write(f"- Superhost: {host_is_superhost}")
+        st.write("**Location & Host**")
+        st.write(f"- Area: {neighbourhood}")
+        st.write(f"- Host Listings: {host_listings_count}")
         st.write(f"- Rating: {review_scores_rating}/5")
-        st.write(f"- Reviews: {number_of_reviews}")
 
 # Prediction button
 if st.sidebar.button("🚀 Predict Price", type="primary", use_container_width=True):
@@ -235,7 +254,7 @@ if st.sidebar.button("🚀 Predict Price", type="primary", use_container_width=T
                 st.write("**Input Shape:**", inp.shape)
                 st.write("**Expected Features:**", len(model.feature_names_in_))
                 st.write("**Actual Features:**", len(inp.columns))
-                st.write("**Features:**", list(inp.columns))
+                st.write("**Feature Match:**", list(inp.columns) == list(model.feature_names_in_))
             
             # Make prediction
             price, status = predict_price_safe(inp)
@@ -286,4 +305,4 @@ with st.expander("ℹ️ Model Information"):
 
 # Footer
 st.write("---")
-st.caption("Cape Town Airbnb Price Prediction | XGBoost Model | 11 Features")
+st.caption("Cape Town Airbnb Price Prediction | XGBoost Model | 20 Features")
